@@ -1,0 +1,5 @@
+{
+    "database": "MIMIC",
+    "collection": "filtered_notes",
+    "text_field": "text"
+}

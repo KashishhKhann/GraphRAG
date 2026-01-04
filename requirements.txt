@@ -1,0 +1,48 @@
+# Graph RAG Pipeline - Python Dependencies
+#
+# IMPORTANT: The scispacy and spacy versions must be compatible:
+# - scispacy 0.5.x requires spacy 3.4.x
+# - The en_core_sci_* models 0.5.1 require spacy>=3.4.1,<3.5.0
+#
+# Install with: pip install -r requirements.txt
+# Then download spacy models separately (see RUNBOOK.md)
+
+# Core ML/NLP
+numpy==1.26.4
+scipy==1.15.3
+scikit-learn==1.6.0
+torch>=2.0.0
+
+# Embeddings & Transformers
+sentence-transformers>=2.2.0
+transformers>=4.30.0
+tokenizers>=0.13.0
+huggingface-hub>=0.14.0
+safetensors>=0.3.0
+
+# spaCy ecosystem (pinned for compatibility)
+spacy>=3.4.1,<3.5.0
+scispacy==0.5.4
+pysbd>=0.3.4
+
+# Vector search
+faiss-cpu>=1.7.4
+
+# Database clients
+pymongo>=4.0.0
+neo4j>=5.0.0
+
+# LLM / API
+requests>=2.28.0
+
+# Utilities
+python-dotenv>=1.0.0
+tqdm>=4.64.0
+PyYAML>=6.0.0
+
+# Optional: spaCy models can be installed separately after main requirements
+# Run these commands after pip install:
+#   pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
+#   pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_md-0.5.4.tar.gz
+# Or use the fallback model:
+#   python -m spacy download en_core_web_sm
