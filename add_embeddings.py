@@ -33,15 +33,15 @@ print(f"Embedding dimension: {dim}")
 # Only chunks without "embedding" field
 cursor = col.find(
     {FIELD_EMBEDDING: {"$exists": False}},
-    {"_id": 1, FIELD_FULL_TEXT: 1, FIELD_TEXT: 1}
+    {"_id": 1, FIELD_FULL_TEXT: 1, FIELD_TEXT: 1},
 )
-docs = list(cursor)
-print(f"Chunks missing embeddings: {len(docs)}")
+missing_count = col.count_documents({FIELD_EMBEDDING: {"$exists": False}})
+print(f"Chunks missing embeddings: {missing_count}")
 
-if not docs:
+if missing_count == 0:
     print("No work to do. All chunks already have embeddings.")
 else:
-    for doc in tqdm(docs, desc="Embedding chunks"):
+    for doc in tqdm(cursor, total=missing_count, desc="Embedding chunks"):
         text = doc.get(FIELD_FULL_TEXT) or doc.get(FIELD_TEXT) or ""
         if not text.strip():
             continue
@@ -49,10 +49,7 @@ else:
         vec = embedder.encode(text)
         vec = vec.tolist()
 
-        col.update_one(
-            {"_id": doc["_id"]},
-            {"$set": {FIELD_EMBEDDING: vec}}
-        )
+        col.update_one({"_id": doc["_id"]}, {"$set": {FIELD_EMBEDDING: vec}})
 
 print("\n============================================================")
 print("Finished embedding processed_chunks")

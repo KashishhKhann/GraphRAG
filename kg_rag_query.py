@@ -309,7 +309,11 @@ ANSWER:
         },
         timeout=180,
     )
-    data = resp.json()
+    resp.raise_for_status()
+    try:
+        data = resp.json()
+    except ValueError as exc:
+        raise RuntimeError("LLM response was not valid JSON") from exc
     return data.get("response", "").strip()
 
 

@@ -28,8 +28,8 @@ clinical decision support experiments.
 
 ### **Local, Privacy-First Inference**
 
--   Runs fully offline using **Ollama** + **Llama 3.2 3B**
--   Optional larger or biomedical models (Llama 3.1 8B, BioMistral 7B)
+-   Runs fully offline using **Ollama** + **medllama2:latest**
+-   Optional larger or biomedical models via Ollama
 -   Zero API usage required
 
 ### **Reranking & Hybrid Reasoning**
@@ -100,7 +100,7 @@ pip install -r requirements.txt
 
 # Optional: Install Ollama + LLM
 curl -fsSL https://ollama.com/install.sh | sh
-ollama pull llama3.2:3b
+ollama pull medllama2:latest
 
 # Start Neo4j
 docker run --name neo4j-medical   -p 7474:7474 -p 7687:7687   -e NEO4J_AUTH=neo4j/medical123   -d neo4j:latest
@@ -116,7 +116,7 @@ MONGODB_URI=mongodb+srv://your-connection-string
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=medical123
-OLLAMA_MODEL=llama3.2:3b
+OLLAMA_MODEL=medllama2:latest
 ```
 
 ------------------------------------------------------------------------
@@ -190,20 +190,15 @@ print(result["sources"])
 
     medical-rag-system/
     │
-    ├── scripts/
-    │   ├── test_connections.py
-    │   ├── examine_data.py
-    │   ├── process_first_note.py
-    │   ├── process_batch.py
-    │   ├── add_embeddings.py
-    │   └── first_query.py
+    ├── add_embeddings.py
+    ├── build_faiss_index.py
+    ├── entity_extraction.py
+    ├── kg_extraction.py
+    ├── kg_rag_query.py
+    ├── process_batch.py
+    ├── config.py
     │
-    ├── src/
-    │   ├── ingestion/
-    │   ├── query/
-    │   └── utils/
-    │
-    ├── .env
+    ├── data_config.json
     ├── requirements.txt
     └── README.md
 
@@ -228,8 +223,7 @@ CHUNK_SETTINGS = {
 
 ### LLM Options
 
--   **Llama 3.2 3B** (default)
--   **Llama 3.1 8B** (more accurate)
+-   **medllama2:latest** (default)
 -   **BioMistral 7B** (medical-tuned)
 
 ------------------------------------------------------------------------
