@@ -57,7 +57,7 @@ def get_chunks_to_process(limit: int | None = None):
     cursor = chunks_col.find(query, {FIELD_CHUNK_ID: 1, FIELD_TEXT: 1})
     if limit:
         cursor = cursor.limit(limit)
-    return list(cursor)
+    return cursor
 
 def process_chunk(tx, chunk_id: str, concepts: List[str]):
     # Ensure Chunk node exists
@@ -103,8 +103,7 @@ def main():
     print(f"Neo4j: {NEO4J_URI}")
     print("============================================================\n")
 
-    chunks = get_chunks_to_process()
-    total = len(chunks)
+    total = chunks_col.count_documents({FIELD_KG_STATUS: {"$ne": "done"}})
     print(f"Chunks to process ({FIELD_KG_STATUS} != 'done'): {total}")
 
     if total == 0:
@@ -114,7 +113,8 @@ def main():
     count_done = 0
     count_failed = 0
 
-    for doc in tqdm(chunks, desc="KG extracting"):
+    chunks = get_chunks_to_process()
+    for doc in tqdm(chunks, total=total, desc="KG extracting"):
         cid = doc[FIELD_CHUNK_ID]
         text = doc.get(FIELD_TEXT) or ""
         if not text.strip():

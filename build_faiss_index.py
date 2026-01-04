@@ -35,14 +35,10 @@ print(f"Collection: {CHUNKS_COLLECTION}")
 print(f"Output index: {FAISS_INDEX_PATH}")
 print(f"Output mapping: {FAISS_MAP_PATH}")
 
-cursor = col.find(
-    {FIELD_EMBEDDING: {"$exists": True}},
-    {FIELD_CHUNK_ID: 1, FIELD_EMBEDDING: 1}
-)
-docs = list(cursor)
-print(f"Chunks with embeddings: {len(docs)}")
+embedding_count = col.count_documents({FIELD_EMBEDDING: {"$exists": True}})
+print(f"Chunks with embeddings: {embedding_count}")
 
-if not docs:
+if embedding_count == 0:
     print("ERROR: No embeddings found. Run add_embeddings.py first.")
     client.close()
     raise SystemExit(1)
@@ -51,7 +47,11 @@ if not docs:
 chunk_ids = []
 emb_list = []
 
-for d in tqdm(docs, desc="Collecting vectors"):
+cursor = col.find(
+    {FIELD_EMBEDDING: {"$exists": True}},
+    {FIELD_CHUNK_ID: 1, FIELD_EMBEDDING: 1},
+)
+for d in tqdm(cursor, total=embedding_count, desc="Collecting vectors"):
     emb = d.get(FIELD_EMBEDDING)
     if not emb:
         continue

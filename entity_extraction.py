@@ -4,19 +4,23 @@ Extract medical entities using SciSpaCy (NER + UMLS Linking)
 
 import scispacy
 import spacy
-from scispacy.linking import EntityLinker
 
-print("🔬 Loading SciSpaCy model...")
-nlp = spacy.load("en_core_sci_md")
 
-# Add UMLS linker
-linker = EntityLinker(resolve_abbreviations=True, name="umls")
-nlp.add_pipe("scispacy_linker", config={"resolve_abbreviations": True})
+def load_nlp():
+    print("🔬 Loading SciSpaCy model...")
+    nlp = spacy.load("en_core_sci_md")
+    nlp.add_pipe("scispacy_linker", config={"resolve_abbreviations": True})
+    return nlp
 
-def extract_medical_entities(text):
+
+def extract_medical_entities(text, nlp=None):
     """
     Extract entities + UMLS CUIs + canonical names
     """
+    if nlp is None:
+        nlp = load_nlp()
+
+    linker = nlp.get_pipe("scispacy_linker")
     doc = nlp(text)
 
     entities = []
@@ -27,12 +31,14 @@ def extract_medical_entities(text):
         cui, score = ent._.kb_ents[0]
         umls_ent = linker.kb.cui_to_entity[cui]
 
-        entities.append({
-            "text": ent.text,
-            "cui": cui,
-            "canonical_name": umls_ent.canonical_name,
-            "score": score
-        })
+        entities.append(
+            {
+                "text": ent.text,
+                "cui": cui,
+                "canonical_name": umls_ent.canonical_name,
+                "score": score,
+            }
+        )
 
     return entities
 

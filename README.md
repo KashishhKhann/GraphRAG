@@ -190,20 +190,15 @@ print(result["sources"])
 
     medical-rag-system/
     │
-    ├── scripts/
-    │   ├── test_connections.py
-    │   ├── examine_data.py
-    │   ├── process_first_note.py
-    │   ├── process_batch.py
-    │   ├── add_embeddings.py
-    │   └── first_query.py
+    ├── add_embeddings.py
+    ├── build_faiss_index.py
+    ├── entity_extraction.py
+    ├── kg_extraction.py
+    ├── kg_rag_query.py
+    ├── process_batch.py
+    ├── config.py
     │
-    ├── src/
-    │   ├── ingestion/
-    │   ├── query/
-    │   └── utils/
-    │
-    ├── .env
+    ├── data_config.json
     ├── requirements.txt
     └── README.md
 
