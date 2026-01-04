@@ -27,6 +27,7 @@ from pymongo import MongoClient
 from neo4j import GraphDatabase
 import faiss
 import requests
+import spacy
 from sentence_transformers import SentenceTransformer
 
 from config import (
@@ -72,6 +73,25 @@ def init_embedder():
 def init_neo4j():
     validate_neo4j_config()
     return GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+
+
+# ---------------------------------------------------------
+# spaCy model loading
+# ---------------------------------------------------------
+def load_nlp():
+    try:
+        return spacy.load("en_core_sci_sm")
+    except Exception:
+        try:
+            return spacy.load("en_core_web_sm")
+        except Exception:
+            nlp = spacy.blank("en")
+            if "ner" not in nlp.pipe_names:
+                nlp.add_pipe("ner")
+            return nlp
+
+
+nlp = load_nlp()
 
 
 # ---------------------------------------------------------
@@ -157,17 +177,37 @@ def get_concepts_for_chunk(driver, chunk_id: str) -> List[str]:
     return names
 
 
-def compute_kg_score(concepts: List[str]) -> float:
+def extract_query_concepts(text: str) -> List[str]:
+    doc = nlp(text)
+    ents = [ent.text.strip() for ent in doc.ents if ent.text.strip()]
+    seen = set()
+    out = []
+    for e in ents:
+        if e not in seen:
+            seen.add(e)
+            out.append(e)
+    return out
+
+
+def compute_kg_overlap(query_concepts: set[str], chunk_concepts: List[str]) -> float:
     """
-    Simple KG score = number of unique concepts (log-scaled).
+    Overlap score via Jaccard similarity between query and chunk concepts.
     """
-    if not concepts:
+    if not query_concepts or not chunk_concepts:
         return 0.0
-    n = len(set(concepts))
-    return float(np.log1p(n))
+    chunk_set = set(chunk_concepts)
+    union = query_concepts | chunk_set
+    if not union:
+        return 0.0
+    return float(len(query_concepts & chunk_set) / len(union))
 
 
-def hybrid_rank(candidates: List[Dict[str, Any]], driver, top_k: int) -> List[Dict[str, Any]]:
+def hybrid_rank(
+    candidates: List[Dict[str, Any]],
+    driver,
+    query_concepts: set[str],
+    top_k: int,
+) -> List[Dict[str, Any]]:
     if not candidates:
         return []
 
@@ -176,7 +216,7 @@ def hybrid_rank(candidates: List[Dict[str, Any]], driver, top_k: int) -> List[Di
     for c in candidates:
         cid = c["chunk_id"]
         concepts = get_concepts_for_chunk(driver, cid)
-        kg_score = compute_kg_score(concepts)
+        kg_score = compute_kg_overlap(query_concepts, concepts)
         enriched.append(
             {
                 **c,
@@ -340,6 +380,7 @@ def kg_rag_query(
         print(f"\nQUESTION: {question}")
         print(f"Filter: {FIELD_SUBJECT_ID}={subject_id} | {FIELD_HADM_ID}={hadm_id}\n")
 
+        query_concepts = set(extract_query_concepts(question))
         q_vec = embed_query(embedder, question)
         hits_raw = faiss_candidates(index, mapping, q_vec, oversample=top_k * 20)
 
@@ -355,7 +396,7 @@ def kg_rag_query(
             print("No chunks matched the patient/admission filters.")
             return None
 
-        ranked = hybrid_rank(filtered, driver, top_k=top_k)
+        ranked = hybrid_rank(filtered, driver, query_concepts, top_k=top_k)
         print(f"\nUsing top {len(ranked)} chunks after hybrid scoring.\n")
 
         context = build_full_context(ranked)
